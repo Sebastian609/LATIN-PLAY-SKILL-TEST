@@ -18,9 +18,43 @@ class NodeService
         return $this->repository->getRoot();
     }
 
-    public function deleteNode(string $id): ?Node
+    public function delete(string $id): ?Node
     {
         return $this->repository->delete($id);
+    }
+
+    public function getMaxDepth(): int
+    {
+        return $this->repository->getMaxDepth();
+    }
+
+    public function getDescendantCount(string $id): int
+    {
+        return $this->repository->getDescendantCount($id);
+    }
+
+    public function bfs(): array
+    {
+        return $this->repository->bfs();
+    }
+
+    public function dfs(): array
+    {
+        $result = [];
+        $node = $this->repository->getRoot();
+        $this->dfsRecursive($node, $result);
+        return $result;
+    }
+
+    private function dfsRecursive(Node $node, array &$result): void
+    {
+        // Añadimos el nodo actual
+        $result[] = $node;
+
+        // Recorremos en profundidad cada hijo
+        foreach ($node->sons as $child) {
+            $this->dfsRecursive($child, $result);
+        }
     }
 
     public function changeFather(string $id, string $fatherId): ?Node
@@ -65,7 +99,7 @@ class NodeService
                 // Guardar como raíz si no hay padre
                 $this->repository->save($node);
             }
-            
+
 
             return $node;
         } catch (\Throwable $th) {

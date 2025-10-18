@@ -61,6 +61,32 @@ class NodeRepository implements INodeRepository
         return $this->searchNode($this->root, $name);
     }
 
+    private function searchNode(?Node $current, string $name): ?Node
+    {
+        if ($current === null) return null;
+        if ($current->name === $name) return $current;
+
+        foreach ($current->sons as $son) {
+            $found = $this->searchNode($son, $name);
+            if ($found) return $found;
+        }
+
+        return null;
+    }
+
+    private function searchNodeById(?Node $current, string $id): ?Node
+    {
+        if ($current === null) return null;
+        if ($current->id === $id) return $current;
+
+        foreach ($current->sons as $son) {
+            $found = $this->searchNodeById($son, $id);
+            if ($found) return $found;
+        }
+
+        return null;
+    }
+
     public function findById(string $id): ?Node
     {
         return $this->searchNodeById($this->root, $id);
@@ -108,29 +134,97 @@ class NodeRepository implements INodeRepository
         $son1->sons[1]->addSon(new Node("DIEGO"));
     }
 
-    private function searchNode(?Node $current, string $name): ?Node
+    public function dfs(): array
     {
-        if ($current === null) return null;
-        if ($current->name === $name) return $current;
-
-        foreach ($current->sons as $son) {
-            $found = $this->searchNode($son, $name);
-            if ($found) return $found;
-        }
-
-        return null;
+        $result = [];
+        $this->dfsRecursive($this->root, $result);
+        return $result;
     }
 
-    private function searchNodeById(?Node $current, string $id): ?Node
+    public function bfs(): array
     {
-        if ($current === null) return null;
-        if ($current->id === $id) return $current;
-
-        foreach ($current->sons as $son) {
-            $found = $this->searchNodeById($son, $id);
-            if ($found) return $found;
+        $result = [];
+        if ($this->root === null) {
+            return $result;
         }
 
-        return null;
+        $queue = [$this->root];
+
+        while (!empty($queue)) {
+            $node = array_shift($queue);
+            $result[] = [
+                'id' => $node->id,
+                'name' => $node->name
+            ];
+
+            foreach ($node->sons as $son) {
+                $queue[] = $son;
+            }
+        }
+
+        return $result;
+    }
+
+    public function getMaxDepth(): int
+    {
+        return $this->calculateDepth($this->root);
+    }
+
+    public function getDescendantCount(string $id): int
+    {
+        $node = $this->findById($id);
+        if ($node === null) {
+            return 0;
+        }
+
+        return $this->countDescendants($node);
+    }
+
+    private function dfsRecursive(?Node $node, array &$result): void
+    {
+        if ($node === null) {
+            return;
+        }
+
+        $result[] = [
+            'id' => $node->id,
+            'name' => $node->name
+        ];
+
+        foreach ($node->sons as $son) {
+            $this->dfsRecursive($son, $result);
+        }
+    }
+
+    private function calculateDepth(?Node $node): int
+    {
+        if ($node === null) {
+            return 0;
+        }
+
+        $maxChildDepth = 0;
+        foreach ($node->sons as $son) {
+            $childDepth = $this->calculateDepth($son);
+            if ($childDepth > $maxChildDepth) {
+                $maxChildDepth = $childDepth;
+            }
+        }
+
+        return 1 + $maxChildDepth;
+    }
+
+    private function countDescendants(?Node $node): int
+    {
+        if ($node === null) {
+            return 0;
+        }
+
+        $count = count($node->sons);
+
+        foreach ($node->sons as $son) {
+            $count += $this->countDescendants($son);
+        }
+
+        return $count;
     }
 }
